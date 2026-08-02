@@ -42,12 +42,14 @@ const PROVIDER_LABEL: Record<AiProvider, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic (Claude)',
   groq: 'Groq (Gratis para pruebas)',
+  deepseek: 'Deepseek (Económico)',
 };
 
 const KEY_PLACEHOLDER: Record<AiProvider, string> = {
   openai: 'sk-...',
   anthropic: 'sk-ant-...',
   groq: 'gsk_...',
+  deepseek: 'sk-...',
 };
 
 export function AiConfig() {
@@ -286,6 +288,9 @@ export function AiConfig() {
                     </SelectItem>
                     <SelectItem value="groq">
                       {PROVIDER_LABEL.groq}
+                    </SelectItem>
+                    <SelectItem value="deepseek">
+                      {PROVIDER_LABEL.deepseek}
                     </SelectItem>
                   </SelectContent>
                 </Select>
