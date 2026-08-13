@@ -28,7 +28,7 @@ import {
   mediaUsageCount,
   type MediaUsage,
 } from "@/lib/media/media-usage";
-import type { MediaAsset } from "@/types";
+import type { MediaAsset, MediaCategory } from "@/types";
 
 interface MediaPreviewDialogProps {
   /** Null while nothing is selected — the dialog stays closed. */
@@ -36,6 +36,8 @@ interface MediaPreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCopyUrl: (asset: MediaAsset) => void;
+  /** Folders for the name lookup (phase 5). */
+  folders?: MediaCategory[];
 }
 
 /**
@@ -49,10 +51,13 @@ export function MediaPreviewDialog({
   open,
   onOpenChange,
   onCopyUrl,
+  folders = [],
 }: MediaPreviewDialogProps) {
   const t = useTranslations("MediaLibrary");
 
   const [usage, setUsage] = useState<MediaUsage | null>(null);
+
+  const folderName = folders.find((f) => f.id === asset?.category_id)?.name;
 
   // Load "Utilizado en" whenever a different asset is previewed.
   useEffect(() => {
@@ -85,6 +90,7 @@ export function MediaPreviewDialog({
               </DialogTitle>
               <DialogDescription>
                 {t("previewSubtitle", { kind: t(`kind.${asset.kind}`) })}
+                {folderName ? ` · ${folderName}` : ""}
               </DialogDescription>
             </DialogHeader>
 

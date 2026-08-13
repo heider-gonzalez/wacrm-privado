@@ -679,6 +679,17 @@ export interface QuickReply {
 // ============================================================
 
 /**
+ * A virtual folder (category) the account groups its media into
+ * (migration 043). No physical folders — a label on media_assets.
+ */
+export interface MediaCategory {
+  id: string;
+  account_id: string;
+  name: string;
+  created_at: string;
+}
+
+/**
  * One row per object in the `media-library` Storage bucket. The
  * Storage path is sanitized + timestamped, so `file_name` is the
  * only place the original upload name survives. `public_url` is
@@ -700,6 +711,8 @@ export interface MediaAsset {
   kind: 'image' | 'video' | 'document';
   size_bytes: number;
   public_url: string;
+  /** Virtual folder (migration 043). NULL = uncategorized. */
+  category_id?: string | null;
   /** Audit only; NULL after the uploader's auth user is deleted. */
   uploaded_by?: string | null;
   created_at: string;

@@ -20,6 +20,8 @@ interface MediaUploadButtonProps {
   canAct: boolean;
   /** Called once per successfully uploaded asset (prepend to grid). */
   onUploaded: (asset: MediaAsset) => void;
+  /** Virtual folder to place uploads into (phase 5). Null = uncategorized. */
+  categoryId?: string | null;
 }
 
 /**
@@ -38,6 +40,7 @@ interface MediaUploadButtonProps {
 export function MediaUploadButton({
   canAct,
   onUploaded,
+  categoryId,
 }: MediaUploadButtonProps) {
   const t = useTranslations("MediaLibrary");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -64,7 +67,7 @@ export function MediaUploadButton({
       }
 
       try {
-        const asset = await uploadMediaAsset(file);
+        const asset = await uploadMediaAsset(file, categoryId ?? null);
         uploadedCount += 1;
         onUploaded(asset);
       } catch (err) {

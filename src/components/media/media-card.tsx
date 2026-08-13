@@ -1,6 +1,14 @@
 "use client";
 
-import { Eye, FileText, MoreVertical, Play, Copy, Trash2 } from "lucide-react";
+import {
+  Eye,
+  FileText,
+  Folder,
+  MoreVertical,
+  Play,
+  Copy,
+  Trash2,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Badge } from "@/components/ui/badge";
@@ -8,18 +16,25 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatBytes } from "@/lib/media/media-kinds";
-import type { MediaAsset } from "@/types";
+import type { MediaAsset, MediaCategory } from "@/types";
 
 interface MediaCardProps {
   asset: MediaAsset;
   /** False for viewers — hides the delete action (read-only role). */
   canWrite: boolean;
+  /** Folders for the "Move to folder" submenu + name lookup (phase 5). */
+  folders: MediaCategory[];
   onPreview: (asset: MediaAsset) => void;
   onCopyUrl: (asset: MediaAsset) => void;
   onDelete: (asset: MediaAsset) => void;
+  /** Move the asset into a folder (null = uncategorized). */
+  onMove: (asset: MediaAsset, categoryId: string | null) => void;
 }
 
 /**
@@ -34,11 +49,15 @@ interface MediaCardProps {
 export function MediaCard({
   asset,
   canWrite,
+  folders,
   onPreview,
   onCopyUrl,
   onDelete,
+  onMove,
 }: MediaCardProps) {
   const t = useTranslations("MediaLibrary");
+
+  const folderName = folders.find((f) => f.id === asset.category_id)?.name;
 
   return (
     <div className="group relative overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/40">
@@ -114,6 +133,31 @@ export function MediaCard({
               {t("actionCopyUrl")}
             </DropdownMenuItem>
             {canWrite && (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="text-popover-foreground focus:bg-accent focus:text-accent-foreground">
+                  <Folder className="size-4" />
+                  {t("actionMoveToFolder")}
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="max-h-64 min-w-44 overflow-y-auto bg-popover text-popover-foreground ring-border">
+                  <DropdownMenuItem
+                    onClick={() => onMove(asset, null)}
+                    className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
+                  >
+                    {t("folderUncategorized")}
+                  </DropdownMenuItem>
+                  {folders.map((f) => (
+                    <DropdownMenuItem
+                      key={f.id}
+                      onClick={() => onMove(asset, f.id)}
+                      className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
+                    >
+                      {f.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            )}
+            {canWrite && (
               <DropdownMenuItem
                 onClick={() => onDelete(asset)}
                 className="text-destructive focus:bg-destructive/10 focus:text-destructive"
@@ -135,7 +179,19 @@ export function MediaCard({
           {asset.file_name}
         </p>
         <div className="mt-1.5 flex items-center justify-between gap-2">
-          <Badge variant="outline">{t(`kind.${asset.kind}`)}</Badge>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Badge variant="outline">{t(`kind.${asset.kind}`)}</Badge>
+            {folderName && (
+              <Badge
+                variant="outline"
+                className="max-w-[6.5rem] gap-1 truncate"
+                title={folderName}
+              >
+                <Folder className="h-3 w-3 shrink-0" />
+                <span className="truncate">{folderName}</span>
+              </Badge>
+            )}
+          </div>
           <span className="text-xs tabular-nums text-muted-foreground">
             {formatBytes(asset.size_bytes)}
           </span>

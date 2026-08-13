@@ -116,7 +116,20 @@
     "statsVideos": "Videos",
     "statsDocuments": "Documentos",
     "statsEmpty": "Aún no hay archivos en la biblioteca.",
-    "statsBarAria": "Almacenamiento utilizado: {used}"
+    "statsBarAria": "Almacenamiento utilizado: {used}",
+    "folderAll": "Todos",
+    "folderUncategorized": "Sin categoría",
+    "folderNewPlaceholder": "Nueva carpeta…",
+    "folderCreateAria": "Crear carpeta",
+    "folderDeleteAria": "Eliminar carpeta {name}",
+    "folderDeleteTitle": "Eliminar carpeta",
+    "folderDeleteDescription": "¿Eliminar la carpeta \"{name}\"? Sus archivos pasarán a \"Sin categoría\".",
+    "folderCreated": "Carpeta creada.",
+    "folderDeleted": "Carpeta eliminada.",
+    "folderCreateFailed": "No se pudo crear la carpeta. {message}",
+    "folderDeleteFailed": "No se pudo eliminar la carpeta. {message}",
+    "folderMoveFailed": "No se pudo mover el archivo. {message}",
+    "actionMoveToFolder": "Mover a carpeta"
   },
   "ModeToggle": {
     "switchMode": "Cambiar a modo {mode}"

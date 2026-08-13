@@ -1518,6 +1518,7 @@ export type Database = {
         Row: {
           account_id: string
           bucket: string
+          category_id: string | null
           created_at: string
           file_name: string
           id: string
@@ -1531,6 +1532,7 @@ export type Database = {
         Insert: {
           account_id: string
           bucket?: string
+          category_id?: string | null
           created_at?: string
           file_name: string
           id?: string
@@ -1544,6 +1546,7 @@ export type Database = {
         Update: {
           account_id?: string
           bucket?: string
+          category_id?: string | null
           created_at?: string
           file_name?: string
           id?: string
@@ -1557,6 +1560,42 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "media_assets_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_assets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "media_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_categories: {
+        Row: {
+          account_id: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_categories_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"

@@ -24,6 +24,11 @@ export interface ListMediaAssetsOptions {
   search?: string;
   /** Kind filter; "all" / undefined = every kind. */
   kind?: MediaKind | "all";
+  /**
+   * Virtual folder filter (phase 5). `undefined` = no filter (every
+   * folder); `null` = uncategorized only; a category id = that folder.
+   */
+  categoryId?: string | null;
 }
 
 /**
@@ -32,7 +37,7 @@ export interface ListMediaAssetsOptions {
  * (and adding one would just repeat the JWT claim).
  */
 export async function listMediaAssets(
-  { search, kind }: ListMediaAssetsOptions = {},
+  { search, kind, categoryId }: ListMediaAssetsOptions = {},
 ): Promise<MediaAsset[]> {
   const supabase = createClient();
 
@@ -43,6 +48,12 @@ export async function listMediaAssets(
 
   if (kind && kind !== "all") {
     query = query.eq("kind", kind);
+  }
+
+  if (categoryId !== undefined) {
+    query = categoryId === null
+      ? query.is("category_id", null)
+      : query.eq("category_id", categoryId);
   }
 
   const term = search?.trim();
@@ -68,7 +79,10 @@ export async function listMediaAssets(
  * unindexed object would be an invisible orphan the library can
  * never list or delete.
  */
-export async function uploadMediaAsset(file: File): Promise<MediaAsset> {
+export async function uploadMediaAsset(
+  file: File,
+  categoryId?: string | null,
+): Promise<MediaAsset> {
   const kind = kindFromMime(file.type);
   if (!kind) {
     throw new Error(`Unsupported file type: ${file.type || file.name}`);
@@ -89,6 +103,7 @@ export async function uploadMediaAsset(file: File): Promise<MediaAsset> {
       size_bytes: file.size,
       public_url: uploaded.publicUrl,
       uploaded_by: uploaded.userId,
+      category_id: categoryId ?? null,
     })
     .select()
     .single();

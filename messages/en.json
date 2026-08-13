@@ -116,7 +116,20 @@
     "statsVideos": "Videos",
     "statsDocuments": "Documents",
     "statsEmpty": "No files in the library yet.",
-    "statsBarAria": "Storage used: {used}"
+    "statsBarAria": "Storage used: {used}",
+    "folderAll": "All",
+    "folderUncategorized": "Uncategorized",
+    "folderNewPlaceholder": "New folder…",
+    "folderCreateAria": "Create folder",
+    "folderDeleteAria": "Delete folder {name}",
+    "folderDeleteTitle": "Delete folder",
+    "folderDeleteDescription": "Delete folder \"{name}\"? Its files will become uncategorized.",
+    "folderCreated": "Folder created.",
+    "folderDeleted": "Folder deleted.",
+    "folderCreateFailed": "Could not create the folder. {message}",
+    "folderDeleteFailed": "Could not delete the folder. {message}",
+    "folderMoveFailed": "Could not move the file. {message}",
+    "actionMoveToFolder": "Move to folder"
   },
   "ModeToggle": {
     "switchMode": "Switch to {mode} mode"
