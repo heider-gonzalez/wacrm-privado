@@ -586,11 +586,13 @@ export type Database = {
       broadcast_recipients: {
         Row: {
           broadcast_id: string
+          clicked_at: string | null
           contact_id: string | null
           created_at: string | null
           delivered_at: string | null
           error_message: string | null
           id: string
+          opened_at: string | null
           read_at: string | null
           replied_at: string | null
           sent_at: string | null
@@ -599,11 +601,13 @@ export type Database = {
         }
         Insert: {
           broadcast_id: string
+          clicked_at?: string | null
           contact_id?: string | null
           created_at?: string | null
           delivered_at?: string | null
           error_message?: string | null
           id?: string
+          opened_at?: string | null
           read_at?: string | null
           replied_at?: string | null
           sent_at?: string | null
@@ -612,11 +616,13 @@ export type Database = {
         }
         Update: {
           broadcast_id?: string
+          clicked_at?: string | null
           contact_id?: string | null
           created_at?: string | null
           delivered_at?: string | null
           error_message?: string | null
           id?: string
+          opened_at?: string | null
           read_at?: string | null
           replied_at?: string | null
           sent_at?: string | null
@@ -643,60 +649,111 @@ export type Database = {
       broadcasts: {
         Row: {
           account_id: string
+          attachments: Json | null
           audience_filter: Json | null
+          channel: string
+          channels: string[]
+          converted_leads_count: number
           created_at: string | null
           delivered_count: number | null
           failed_count: number | null
+          from_email: string | null
+          from_name: string | null
+          header_media_url: string | null
+          html_content: string | null
           id: string
+          leads_count: number
+          media_asset_id: string | null
           name: string
+          needs_info_count: number
+          not_interested_count: number
+          pending_ai_count: number
+          qualified_leads_count: number
           read_count: number | null
           replied_count: number | null
+          requesting_call_count: number
           scheduled_at: string | null
           sent_count: number | null
           status: string
+          subject: string | null
           template_language: string
           template_name: string
           template_variables: Json | null
+          text_content: string | null
           total_recipients: number | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           account_id: string
+          attachments?: Json | null
           audience_filter?: Json | null
+          channel?: string
+          channels?: string[]
+          converted_leads_count?: number
           created_at?: string | null
           delivered_count?: number | null
           failed_count?: number | null
+          from_email?: string | null
+          from_name?: string | null
+          header_media_url?: string | null
+          html_content?: string | null
           id?: string
+          leads_count?: number
+          media_asset_id?: string | null
           name: string
+          needs_info_count?: number
+          not_interested_count?: number
+          pending_ai_count?: number
+          qualified_leads_count?: number
           read_count?: number | null
           replied_count?: number | null
+          requesting_call_count?: number
           scheduled_at?: string | null
           sent_count?: number | null
           status?: string
+          subject?: string | null
           template_language?: string
           template_name: string
           template_variables?: Json | null
+          text_content?: string | null
           total_recipients?: number | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           account_id?: string
+          attachments?: Json | null
           audience_filter?: Json | null
+          channel?: string
+          channels?: string[]
+          converted_leads_count?: number
           created_at?: string | null
           delivered_count?: number | null
           failed_count?: number | null
+          from_email?: string | null
+          from_name?: string | null
+          header_media_url?: string | null
+          html_content?: string | null
           id?: string
+          leads_count?: number
+          media_asset_id?: string | null
           name?: string
+          needs_info_count?: number
+          not_interested_count?: number
+          pending_ai_count?: number
+          qualified_leads_count?: number
           read_count?: number | null
           replied_count?: number | null
+          requesting_call_count?: number
           scheduled_at?: string | null
           sent_count?: number | null
           status?: string
+          subject?: string | null
           template_language?: string
           template_name?: string
           template_variables?: Json | null
+          text_content?: string | null
           total_recipients?: number | null
           updated_at?: string | null
           user_id?: string
@@ -707,6 +764,99 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcasts_media_asset_id_fkey"
+            columns: ["media_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_leads: {
+        Row: {
+          account_id: string
+          advisor_id: string | null
+          ai_summary: string | null
+          assigned_at: string | null
+          broadcast_id: string
+          classification: string
+          contact_id: string
+          conversation_id: string | null
+          created_at: string
+          first_response_at: string | null
+          id: string
+          interest_level: string | null
+          last_activity_at: string | null
+          metadata: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          advisor_id?: string | null
+          ai_summary?: string | null
+          assigned_at?: string | null
+          broadcast_id: string
+          classification?: string
+          contact_id: string
+          conversation_id?: string | null
+          created_at?: string
+          first_response_at?: string | null
+          id?: string
+          interest_level?: string | null
+          last_activity_at?: string | null
+          metadata?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          advisor_id?: string | null
+          ai_summary?: string | null
+          assigned_at?: string | null
+          broadcast_id?: string
+          classification?: string
+          contact_id?: string
+          conversation_id?: string | null
+          created_at?: string
+          first_response_at?: string | null
+          id?: string
+          interest_level?: string | null
+          last_activity_at?: string | null
+          metadata?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_leads_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_leads_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "broadcasts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_leads_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_leads_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
         ]
@@ -1082,6 +1232,53 @@ export type Database = {
           },
         ]
       }
+      email_configs: {
+        Row: {
+          account_id: string
+          api_key_encrypted: string
+          created_at: string | null
+          from_email: string
+          from_name: string
+          id: string
+          is_active: boolean
+          provider: string
+          reply_to_email: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_id: string
+          api_key_encrypted: string
+          created_at?: string | null
+          from_email: string
+          from_name: string
+          id?: string
+          is_active?: boolean
+          provider?: string
+          reply_to_email?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string
+          api_key_encrypted?: string
+          created_at?: string | null
+          from_email?: string
+          from_name?: string
+          id?: string
+          is_active?: boolean
+          provider?: string
+          reply_to_email?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_configs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: true
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flow_nodes: {
         Row: {
           config: Json
@@ -1161,6 +1358,7 @@ export type Database = {
       flow_runs: {
         Row: {
           account_id: string
+          broadcast_id: string | null
           contact_id: string | null
           conversation_id: string | null
           current_node_key: string | null
@@ -1178,6 +1376,7 @@ export type Database = {
         }
         Insert: {
           account_id: string
+          broadcast_id?: string | null
           contact_id?: string | null
           conversation_id?: string | null
           current_node_key?: string | null
@@ -1195,6 +1394,7 @@ export type Database = {
         }
         Update: {
           account_id?: string
+          broadcast_id?: string | null
           contact_id?: string | null
           conversation_id?: string | null
           current_node_key?: string | null
@@ -1216,6 +1416,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_runs_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "broadcasts"
             referencedColumns: ["id"]
           },
           {
@@ -1300,6 +1507,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "flows_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_assets: {
+        Row: {
+          account_id: string
+          bucket: string
+          created_at: string
+          file_name: string
+          id: string
+          kind: string
+          mime_type: string
+          path: string
+          public_url: string
+          size_bytes: number
+          uploaded_by: string | null
+        }
+        Insert: {
+          account_id: string
+          bucket?: string
+          created_at?: string
+          file_name: string
+          id?: string
+          kind: string
+          mime_type: string
+          path: string
+          public_url: string
+          size_bytes: number
+          uploaded_by?: string | null
+        }
+        Update: {
+          account_id?: string
+          bucket?: string
+          created_at?: string
+          file_name?: string
+          id?: string
+          kind?: string
+          mime_type?: string
+          path?: string
+          public_url?: string
+          size_bytes?: number
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_assets_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
@@ -1396,6 +1653,7 @@ export type Database = {
           id: string
           language: string | null
           last_submitted_at: string | null
+          media_asset_id: string | null
           meta_template_id: string | null
           name: string
           quality_score: string | null
@@ -1420,6 +1678,7 @@ export type Database = {
           id?: string
           language?: string | null
           last_submitted_at?: string | null
+          media_asset_id?: string | null
           meta_template_id?: string | null
           name: string
           quality_score?: string | null
@@ -1444,6 +1703,7 @@ export type Database = {
           id?: string
           language?: string | null
           last_submitted_at?: string | null
+          media_asset_id?: string | null
           meta_template_id?: string | null
           name?: string
           quality_score?: string | null
@@ -1460,6 +1720,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_templates_media_asset_id_fkey"
+            columns: ["media_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
             referencedColumns: ["id"]
           },
         ]
@@ -1964,6 +2231,10 @@ export type Database = {
       merge_duplicate_conversations: { Args: never; Returns: number }
       peek_invitation: { Args: { p_token_hash: string }; Returns: Json }
       recompute_broadcast_counts: { Args: { bid: string }; Returns: undefined }
+      recompute_broadcast_lead_counts: {
+        Args: { bid: string }
+        Returns: undefined
+      }
       record_webhook_failure: {
         Args: { endpoint_id: string; max_failures: number }
         Returns: undefined
@@ -2116,4 +2387,3 @@ export const Constants = {
     },
   },
 } as const
-

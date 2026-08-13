@@ -46,6 +46,14 @@ interface BroadcastPayload {
    * falls back to the template's stored URL only when this is empty.
    */
   headerMediaUrl?: string;
+  /**
+   * media_assets.id of the library asset the wizard picked
+   * (phase 2). Persisted on the broadcasts row so the audit trail
+   * records which file was used; JSON-null when the broadcast runs
+   * against the template's default URL. The hook doesn't read this
+   * value — it only stores it.
+   */
+  mediaAssetId?: string | null;
 }
 
 interface UseBroadcastSendingReturn {
@@ -368,6 +376,8 @@ export function useBroadcastSending(): UseBroadcastSendingReturn {
             customField: payload.audience.customField,
             excludeTagIds: payload.audience.excludeTagIds,
           },
+          media_asset_id: payload.mediaAssetId ?? null,
+          header_media_url: payload.headerMediaUrl?.trim() || null,
           status: 'sending',
           total_recipients: contacts.length,
           sent_count: 0,

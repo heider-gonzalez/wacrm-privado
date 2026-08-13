@@ -191,6 +191,7 @@ export async function PATCH(
         header_content: payload.header_content ?? null,
         header_media_url: payload.header_media_url ?? null,
         header_handle: payload.header_handle ?? null,
+        media_asset_id: payload.media_asset_id ?? null,
         body_text: payload.body_text,
         footer_text: payload.footer_text ?? null,
         buttons: payload.buttons ?? null,

@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
-import { MessageTemplate } from '@/types';
+import { MediaAsset, MessageTemplate } from '@/types';
 import { Step1ChooseTemplate } from '@/components/broadcasts/step1-choose-template';
 import { Step2SelectAudience } from '@/components/broadcasts/step2-select-audience';
 import { Step3Personalize } from '@/components/broadcasts/step3-personalize';
 import { Step4ScheduleSend } from '@/components/broadcasts/step4-schedule-send';
 import { useBroadcastSending } from '@/hooks/use-broadcast-sending';
+import { resolveHeaderMedia } from '@/lib/broadcasts/broadcast-media';
 import { Check } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -43,11 +44,19 @@ export default function NewBroadcastPage() {
   const [variables, setVariables] = useState<
     Record<string, { type: 'static' | 'field' | 'custom_field'; value: string }>
   >({});
-  const [headerMediaUrl, setHeaderMediaUrl] = useState('');
+  const [selectedMediaAsset, setSelectedMediaAsset] =
+    useState<MediaAsset | null>(null);
   const [name, setName] = useState('');
 
   async function handleSend() {
     if (!template) return;
+
+    // Resolve the URL Meta will get from the chosen library asset,
+    // falling back to the template's stored `header_media_url`.
+    const media = resolveHeaderMedia({
+      selectedAsset: selectedMediaAsset,
+      templateDefaultUrl: template.header_media_url,
+    });
 
     try {
       const broadcastId = await createAndSendBroadcast({
@@ -61,7 +70,8 @@ export default function NewBroadcastPage() {
           excludeTagIds: audience.excludeTagIds,
         },
         variables,
-        headerMediaUrl,
+        headerMediaUrl: media.url,
+        mediaAssetId: media.assetId,
       });
       router.push(`/broadcasts/${broadcastId}`);
     } catch (err) {
@@ -101,6 +111,15 @@ export default function NewBroadcastPage() {
       return;
     }
 
+    // Snapshot the picked asset URL (or the template default) so a
+    // future resume-draft UX can show what was attached without an
+    // extra JOIN, and an asset delete won't lose the URL either
+    // (migration 041 keeps header_media_url via SET NULL on the FK).
+    const media = resolveHeaderMedia({
+      selectedAsset: selectedMediaAsset,
+      templateDefaultUrl: template.header_media_url,
+    });
+
     const { error } = await supabase.from('broadcasts').insert({
       user_id: user.id,
       account_id: accountId,
@@ -112,6 +131,8 @@ export default function NewBroadcastPage() {
         type: audience.type,
         tagIds: audience.tagIds,
       },
+      media_asset_id: media.assetId,
+      header_media_url: media.url || null,
       status: 'draft',
       total_recipients: 0,
       sent_count: 0,
@@ -209,8 +230,8 @@ export default function NewBroadcastPage() {
               template={template}
               variables={variables}
               onUpdate={setVariables}
-              headerMediaUrl={headerMediaUrl}
-              onHeaderMediaUrlChange={setHeaderMediaUrl}
+              selectedMediaAsset={selectedMediaAsset}
+              onSelectMediaAsset={setSelectedMediaAsset}
               onNext={() => setCurrentStep(3)}
               onBack={() => setCurrentStep(1)}
             />

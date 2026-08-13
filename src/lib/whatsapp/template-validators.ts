@@ -42,6 +42,8 @@ export interface TemplatePayload {
   header_content?: string;
   header_media_url?: string;
   header_handle?: string;
+  /** Media Library asset picked for the header (phase 3). */
+  media_asset_id?: string | null;
   body_text: string;
   footer_text?: string;
   buttons?: TemplateButton[];

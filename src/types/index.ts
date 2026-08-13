@@ -322,6 +322,12 @@ export interface MessageTemplate {
   header_content?: string;
   header_handle?: string;
   header_media_url?: string;
+  /**
+   * Media Library asset chosen for the template header (phase 3).
+   * NULL for text headers or templates created before the library
+   * link existed. SET NULL if the asset is deleted.
+   */
+  media_asset_id?: string | null;
   body_text: string;
   footer_text?: string;
   buttons?: TemplateButton[];
@@ -397,6 +403,19 @@ export interface Broadcast {
   read_count: number;
   replied_count: number;
   failed_count: number;
+  /**
+   * Media Library asset picked in the wizard (phase 2). NULL for
+   * text-header templates or when relying on the template default.
+   * SET NULL if the asset is later deleted from the library
+   * (migration 041).
+   */
+  media_asset_id?: string | null;
+  /**
+   * Snapshot of media_assets.public_url plumbed to Meta at send
+   * time (template-send-builder.ts). Survives a media_asset_id
+   * SET NULL so historical broadcasts keep a working link.
+   */
+  header_media_url?: string | null;
   /** Campaign lead metrics (migration 037) */
   leads_count?: number;
   not_interested_count?: number;
@@ -653,4 +672,35 @@ export interface QuickReply {
   interactive_payload?: InteractiveMessagePayload | null;
   created_at: string;
   updated_at: string;
+}
+
+// ============================================================
+// Media Library — campaign media catalogue (migration 040)
+// ============================================================
+
+/**
+ * One row per object in the `media-library` Storage bucket. The
+ * Storage path is sanitized + timestamped, so `file_name` is the
+ * only place the original upload name survives. `public_url` is
+ * denormalized so the broadcast media picker (phase 2) can hand
+ * Meta a URL without a Storage round-trip.
+ */
+export interface MediaAsset {
+  id: string;
+  /** Account tenancy key — RLS scopes every query to the caller's account. */
+  account_id: string;
+  /** Storage bucket holding the object (always `media-library` today). */
+  bucket: string;
+  /** Account-scoped Storage object path. */
+  path: string;
+  /** Original file name as uploaded — display + search. */
+  file_name: string;
+  mime_type: string;
+  /** Coarse filter bucket: image | video | document. */
+  kind: 'image' | 'video' | 'document';
+  size_bytes: number;
+  public_url: string;
+  /** Audit only; NULL after the uploader's auth user is deleted. */
+  uploaded_by?: string | null;
+  created_at: string;
 }
