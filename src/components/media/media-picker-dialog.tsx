@@ -21,6 +21,7 @@ import {
   formatBytes,
   MEDIA_LIBRARY_BUCKET,
 } from "@/lib/media/media-kinds";
+import { getMediaStats, type MediaStats } from "@/lib/media/media-stats";
 import type { MediaAsset } from "@/types";
 
 interface MediaPickerDialogProps {
@@ -65,6 +66,8 @@ export function MediaPickerDialog({
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [stats, setStats] = useState<MediaStats | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const fetchSeq = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -85,7 +88,26 @@ export function MediaPickerDialog({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearch("");
     setDebouncedSearch("");
+    setShowAll(false);
     ++fetchSeq.current;
+  }, [open]);
+
+  // Load per-kind counts so the empty state can tell an actually-empty
+  // library apart from "has files, just none of this kind".
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    getMediaStats()
+      .then((s) => {
+        if (!cancelled) setStats(s);
+      })
+      .catch(() => {
+        // Stats are informational — "upload your first file" is an
+        // acceptable fallback when we can't count.
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
   // Fetch filtered assets while the dialog is open. The race guard
@@ -98,7 +120,10 @@ export function MediaPickerDialog({
       setLoading(true);
       setError(null);
       try {
-        const rows = await listMediaAssets({ kind, search: debouncedSearch });
+        const rows = await listMediaAssets({
+          kind: showAll ? undefined : kind,
+          search: debouncedSearch,
+        });
         if (seq !== fetchSeq.current) return;
         setAssets(rows);
       } catch (err) {
@@ -110,7 +135,7 @@ export function MediaPickerDialog({
     }
     void fetchAssets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, kind, debouncedSearch]);
+  }, [open, kind, debouncedSearch, showAll]);
 
   async function handleUploadFiles(files: File[]) {
     setUploading(true);
@@ -181,6 +206,22 @@ export function MediaPickerDialog({
     }
   })();
 
+  const totalCount = stats
+    ? stats.counts.image + stats.counts.video + stats.counts.document
+    : 0;
+
+  // How many assets live in the OTHER kinds — drives the "Show all"
+  // toggle and the "no files of this kind" empty state.
+  const otherKindCount = stats
+    ? kind === "image"
+      ? stats.counts.video + stats.counts.document
+      : kind === "video"
+        ? stats.counts.image + stats.counts.document
+        : stats.counts.image + stats.counts.video
+    : 0;
+
+  const showAllToggle = otherKindCount > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl">
@@ -214,6 +255,18 @@ export function MediaPickerDialog({
             )}
             {uploading ? t("uploading") : t("pickerUploadNew")}
           </Button>
+          {showAllToggle && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowAll((v) => !v)}
+              className="border-border"
+            >
+              {showAll
+                ? t("pickerShowKind", { kind: t(`kind.${kind}`) })
+                : t("pickerShowAll")}
+            </Button>
+          )}
           <input
             ref={fileInputRef}
             type="file"
@@ -247,27 +300,59 @@ export function MediaPickerDialog({
             </div>
           ) : assets.length === 0 ? (
             <div className="py-12 text-center">
-              <p className="text-sm text-muted-foreground">
-                {debouncedSearch
-                  ? t("noResultsHint")
-                  : t("uploadFirst")}
-              </p>
+              {debouncedSearch ? (
+                <p className="text-sm text-muted-foreground">
+                  {t("noResultsHint")}
+                </p>
+              ) : stats !== null && totalCount > 0 ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {t("pickerEmptyKind", { kind: t(`kind.${kind}`) })}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t("pickerOtherKinds", {
+                      images: stats.counts.image,
+                      videos: stats.counts.video,
+                      documents: stats.counts.document,
+                    })}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {t("uploadFirst")}
+                </p>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 p-1 sm:grid-cols-3">
               {assets.map((asset) => {
                 const isSelected = selectedId === asset.id;
+                const mismatched = showAll && asset.kind !== kind;
+                const mismatchHint = mismatched
+                  ? t("pickerMismatchHint", {
+                      kind: t(`kind.${asset.kind}`),
+                      required: t(`kind.${kind}`),
+                    })
+                  : undefined;
                 return (
                   <button
                     key={asset.id}
                     type="button"
+                    disabled={mismatched}
                     onClick={() => onPick(asset)}
-                    className={`group relative overflow-hidden rounded-lg border bg-card text-left transition-colors hover:border-primary/50 ${
+                    title={mismatchHint}
+                    className={`group relative overflow-hidden rounded-lg border bg-card text-left transition-colors ${
+                      mismatched
+                        ? "cursor-not-allowed opacity-40"
+                        : "hover:border-primary/50"
+                    } ${
                       isSelected
                         ? "border-primary ring-2 ring-primary/30"
                         : "border-border"
                     }`}
-                    aria-label={t("cardPreview", { name: asset.file_name })}
+                    aria-label={
+                      mismatchHint ?? t("cardPreview", { name: asset.file_name })
+                    }
                   >
                     <div className="relative aspect-square w-full overflow-hidden bg-muted">
                       {asset.kind === "image" ? (
