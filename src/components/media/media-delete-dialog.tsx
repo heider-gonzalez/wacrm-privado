@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { deleteMediaAsset } from "@/lib/media/media-assets";
 import {
   emptyMediaUsage,
@@ -47,6 +48,7 @@ export function MediaDeleteDialog({
   const t = useTranslations("MediaLibrary");
   const [deleting, setDeleting] = useState(false);
   const [usage, setUsage] = useState<MediaUsage | null>(null);
+  const [confirmText, setConfirmText] = useState("");
 
   // Load usage when a delete target is chosen — the in-use warning
   // must show the real consumers before the user confirms.
@@ -55,6 +57,7 @@ export function MediaDeleteDialog({
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setUsage(null);
+    setConfirmText("");
     getMediaAssetUsage(asset.id)
       .then((u) => {
         if (!cancelled) setUsage(u);
@@ -68,6 +71,12 @@ export function MediaDeleteDialog({
   }, [open, asset]);
 
   const inUse = usage !== null && mediaUsageCount(usage) > 0;
+
+  // Type-to-confirm: the destructive button stays disabled until the
+  // user re-types the exact file name — the strongest guard against
+  // accidental deletes of the wrong file.
+  const confirmed =
+    confirmText.trim() === (asset?.file_name ?? "").trim();
 
   async function handleDelete() {
     if (!asset) return;
@@ -134,6 +143,22 @@ export function MediaDeleteDialog({
           </div>
         )}
 
+        <div className="space-y-1.5">
+          <label
+            htmlFor="media-delete-confirm"
+            className="block text-sm text-muted-foreground"
+          >
+            {t("deleteTypeToConfirm", { name: asset?.file_name ?? "" })}
+          </label>
+          <Input
+            id="media-delete-confirm"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder={asset?.file_name ?? ""}
+            autoComplete="off"
+          />
+        </div>
+
         <DialogFooter>
           <Button
             variant="outline"
@@ -144,7 +169,7 @@ export function MediaDeleteDialog({
           </Button>
           <Button
             variant="destructive"
-            disabled={deleting}
+            disabled={deleting || !confirmed}
             onClick={() => void handleDelete()}
           >
             {deleting && <Loader2 className="h-4 w-4 animate-spin" />}

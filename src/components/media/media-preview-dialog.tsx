@@ -8,6 +8,7 @@ import {
   FileText,
   LayoutTemplate,
   Megaphone,
+  Trash2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -36,6 +37,10 @@ interface MediaPreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCopyUrl: (asset: MediaAsset) => void;
+  /** Requests deletion of the previewed asset (opens the confirm dialog). */
+  onDelete: (asset: MediaAsset) => void;
+  /** False for viewers — hides the delete action (read-only role). */
+  canDelete: boolean;
   /** Folders for the name lookup (phase 5). */
   folders?: MediaCategory[];
 }
@@ -51,6 +56,8 @@ export function MediaPreviewDialog({
   open,
   onOpenChange,
   onCopyUrl,
+  onDelete,
+  canDelete,
   folders = [],
 }: MediaPreviewDialogProps) {
   const t = useTranslations("MediaLibrary");
@@ -214,6 +221,15 @@ export function MediaPreviewDialog({
                 <ExternalLink className="h-4 w-4" />
                 {t("actionOpen")}
               </Button>
+              {canDelete && (
+                <Button
+                  variant="destructive"
+                  onClick={() => onDelete(asset)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {t("actionDelete")}
+                </Button>
+              )}
             </DialogFooter>
           </>
         )}

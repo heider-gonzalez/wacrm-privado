@@ -150,6 +150,11 @@ export default function MediaLibraryPage() {
     void refreshSummary();
   }
 
+  function handleDeleteFromPreview(asset: MediaAsset) {
+    setPreviewAsset(null);
+    setDeleteTarget(asset);
+  }
+
   function handleMoved() {
     void refreshSummary();
   }
@@ -351,6 +356,8 @@ export default function MediaLibraryPage() {
           if (!open) setPreviewAsset(null);
         }}
         onCopyUrl={(a) => void handleCopyUrl(a)}
+        onDelete={handleDeleteFromPreview}
+        canDelete={canWrite}
         folders={summary?.categories ?? []}
       />
       <MediaDeleteDialog

@@ -94,6 +94,7 @@
     "metaMime": "MIME",
     "deleteTitle": "Delete file",
     "deleteDescription": "Delete \"{name}\" from the library? This action cannot be undone.",
+    "deleteTypeToConfirm": "Type \"{name}\" to confirm.",
     "deleteCancel": "Cancel",
     "deleteConfirm": "Delete",
     "toastUploaded": "{count, plural, =1 {File uploaded} other {# files uploaded}}",

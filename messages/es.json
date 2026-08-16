@@ -94,6 +94,7 @@
     "metaMime": "MIME",
     "deleteTitle": "Eliminar archivo",
     "deleteDescription": "¿Eliminar \"{name}\" de la biblioteca? Esta acción no se puede deshacer.",
+    "deleteTypeToConfirm": "Escribe \"{name}\" para confirmar.",
     "deleteCancel": "Cancelar",
     "deleteConfirm": "Eliminar",
     "toastUploaded": "{count, plural, =1 {Archivo subido} other {# archivos subidos}}",
