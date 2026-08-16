@@ -256,7 +256,7 @@
     },
     "composer": {
       "draftHint": "Tap the ✨ to draft a reply with AI — you can edit it before sending",
-      "sessionExpiredHint": "24-hour session expired. Use a template to re-engage.",
+      "sessionExpiredHint": "The 24-hour window only opens when the customer messages you; sending a campaign doesn't reopen it. Use a template to re-engage.",
       "templates": "Templates",
       "readOnlyPlaceholder": "Read-only — viewers can browse but not reply",
       "sessionExpiredPlaceholder": "Session expired - use a template",

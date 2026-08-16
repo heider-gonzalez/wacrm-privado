@@ -235,7 +235,7 @@ export function MessageThread({
       .reverse()
       .find((m) => m.sender_type === "customer");
 
-    if (!lastCustomerMsg) return { expired: true, remaining: "No customer messages" };
+    if (!lastCustomerMsg) return { expired: true, remaining: tTimer("noCustomerMessages") };
 
     const hoursSince = differenceInHours(new Date(), new Date(lastCustomerMsg.created_at));
     const expired = hoursSince >= 24;

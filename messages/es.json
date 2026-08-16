@@ -256,7 +256,7 @@
     },
     "composer": {
       "draftHint": "Toca el ✨ para redactar una respuesta con IA — puedes editarla antes de enviar",
-      "sessionExpiredHint": "Sesión de 24 horas expirada. Usa una plantilla para volver a contactar.",
+      "sessionExpiredHint": "La ventana de 24 horas solo se abre cuando el cliente te escribe; enviar una campaña no la reabre. Usa una plantilla para contactar de nuevo.",
       "templates": "Plantillas",
       "readOnlyPlaceholder": "Solo lectura — los visualizadores pueden navegar pero no responder",
       "sessionExpiredPlaceholder": "Sesión expirada - usa una plantilla",
