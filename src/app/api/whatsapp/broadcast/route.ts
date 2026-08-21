@@ -245,6 +245,8 @@ export async function POST(request: Request) {
           sanitized,
           template_name,
           sentMessageId,
+          templateRow?.body_text ?? null,
+          recipient.messageParams?.body ?? recipient.params,
         )
       } else {
         console.error(

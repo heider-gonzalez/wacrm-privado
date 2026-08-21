@@ -66,6 +66,14 @@ export interface UploadAccountMediaResult {
   publicUrl: string;
   /** Storage object path (account-scoped). */
   path: string;
+  /**
+   * Account the object was namespaced under (resolved from the
+   * caller's profile). Returned so callers that persist metadata
+   * (media library) don't need a second profiles round-trip.
+   */
+  accountId: string;
+  /** auth.users.id of the uploader — for audit columns. */
+  userId: string;
 }
 
 /**
@@ -114,7 +122,12 @@ export async function uploadAccountMedia(
     data: { publicUrl },
   } = supabase.storage.from(bucket).getPublicUrl(path);
 
-  return { publicUrl, path };
+  return {
+    publicUrl,
+    path,
+    accountId: profile.account_id as string,
+    userId: user.id,
+  };
 }
 
 /**

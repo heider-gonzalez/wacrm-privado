@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Contact, CustomField, MessageTemplate } from '@/types';
+import {
+  headerKindFromTemplate,
+  resolveHeaderMedia,
+} from '@/lib/broadcasts/broadcast-media';
+import { Contact, CustomField, MediaAsset, MessageTemplate } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,8 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, ArrowRight, Eye, ImageIcon, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Eye, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { MediaPicker } from './media-picker';
 
 type VariableType = 'static' | 'field' | 'custom_field';
 
@@ -26,27 +31,12 @@ interface Step3Props {
   template: MessageTemplate;
   variables: Record<string, VariableMapping>;
   onUpdate: (variables: Record<string, VariableMapping>) => void;
-  /** Media URL for an IMAGE/VIDEO/DOCUMENT header, when the template has one. */
-  headerMediaUrl: string;
-  onHeaderMediaUrlChange: (url: string) => void;
+  /** Library asset picked for the header, or null. Replaces the
+   *  former hand-pasted `headerMediaUrl` string (phase 2). */
+  selectedMediaAsset: MediaAsset | null;
+  onSelectMediaAsset: (asset: MediaAsset | null) => void;
   onNext: () => void;
   onBack: () => void;
-}
-
-const MEDIA_HEADER_TYPES = ['image', 'video', 'document'] as const;
-type MediaHeaderType = (typeof MEDIA_HEADER_TYPES)[number];
-
-function isMediaHeaderType(value: unknown): value is MediaHeaderType {
-  return MEDIA_HEADER_TYPES.includes(value as MediaHeaderType);
-}
-
-function isValidHttpUrl(value: string): boolean {
-  try {
-    const u = new URL(value);
-    return u.protocol === 'http:' || u.protocol === 'https:';
-  } catch {
-    return false;
-  }
 }
 
 const contactFields = [
@@ -71,8 +61,8 @@ export function Step3Personalize({
   template,
   variables,
   onUpdate,
-  headerMediaUrl,
-  onHeaderMediaUrlChange,
+  selectedMediaAsset,
+  onSelectMediaAsset,
   onNext,
   onBack,
 }: Step3Props) {
@@ -138,28 +128,28 @@ export function Step3Personalize({
   // send time — Meta requires the media component on every delivery and
   // rejects the broadcast without it. The field is hidden for text-only
   // headers.
-  const mediaHeaderType = isMediaHeaderType(template.header_type)
-    ? template.header_type
-    : null;
+  const mediaHeaderType = headerKindFromTemplate(template);
 
-  // Seed the field with the template's stored sample URL the first time
-  // we land on a media-header template, so the common "reuse the
-  // approved media" case needs no typing. Only seeds when empty to avoid
-  // clobbering a URL the user already edited.
-  useEffect(() => {
-    if (mediaHeaderType && !headerMediaUrl && template.header_media_url) {
-      onHeaderMediaUrlChange(template.header_media_url);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediaHeaderType, template.header_media_url]);
+  // Resolve what Meta will actually get: the picked library asset's
+  // URL if the user chose one, otherwise the template's stored
+  // `header_media_url` (kept by the server-side builder as a
+  // fallback, mirrored here so the wizard validation matches).
+  const resolvedMedia = useMemo(
+    () =>
+      resolveHeaderMedia({
+        selectedAsset: selectedMediaAsset,
+        templateDefaultUrl: template.header_media_url,
+      }),
+    [selectedMediaAsset, template.header_media_url],
+  );
 
-  const headerMediaError = useMemo<'missing' | 'invalid' | null>(() => {
+  // The "Next" gate: a media-header template either needs a picked
+  // asset or a template default URL. Otherwise the broadcast would
+  // hit Meta with no header media and the whole batch would fail.
+  const headerMediaError = useMemo<'missing' | null>(() => {
     if (!mediaHeaderType) return null;
-    const value = headerMediaUrl.trim();
-    if (!value) return 'missing';
-    if (!isValidHttpUrl(value)) return 'invalid';
-    return null;
-  }, [mediaHeaderType, headerMediaUrl]);
+    return resolvedMedia.url.length > 0 ? null : 'missing';
+  }, [mediaHeaderType, resolvedMedia.url]);
 
   /**
    * A placeholder is "unmapped" if the user hasn't picked either a
@@ -243,45 +233,18 @@ export function Step3Personalize({
       </div>
 
       {mediaHeaderType && (
-        <div className="rounded-xl border border-border bg-card/50 p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <ImageIcon className="h-4 w-4 text-primary" />
-            <p className="text-sm font-medium text-foreground">{t('personalize.headerImage')}</p>
-            <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium uppercase text-primary">
-              {mediaHeaderType}
-            </span>
-          </div>
-          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-            {t('personalize.imageUrl')}
-          </label>
-          <Input
-            type="url"
-            value={headerMediaUrl}
-            onChange={(e) => onHeaderMediaUrlChange(e.target.value)}
-            placeholder={t('personalize.imageUrlPlaceholder')}
-            className="border-border bg-muted text-foreground placeholder:text-muted-foreground"
-          />
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {t('personalize.headerImageDesc')}
-          </p>
-          {mediaHeaderType === 'image' &&
-            headerMediaError === null &&
-            headerMediaUrl.trim() && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={headerMediaUrl.trim()}
-                alt="Header preview"
-                className="mt-3 max-h-40 rounded-lg border border-border object-contain"
-              />
-            )}
-          {headerMediaError && (
-            <p className="mt-1.5 text-xs text-amber-300">
-              {headerMediaError === 'missing'
-                ? 'A media URL is required to send this template.'
-                : 'Enter a valid http(s) URL.'}
-            </p>
-          )}
-        </div>
+        <MediaPicker
+          headerType={mediaHeaderType}
+          selected={selectedMediaAsset}
+          onSelect={onSelectMediaAsset}
+          hasTemplateDefault={resolvedMedia.fromTemplateDefault}
+        />
+      )}
+
+      {headerMediaError === 'missing' && mediaHeaderType && (
+        <p className="text-xs text-amber-300">
+          {t('personalize.mediaMissing')}
+        </p>
       )}
 
       {placeholders.length === 0 && !mediaHeaderType ? (

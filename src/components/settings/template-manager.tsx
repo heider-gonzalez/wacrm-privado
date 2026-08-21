@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Upload,
   Paperclip,
+  Images,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -28,6 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/card';
 import { SettingsPanelHead } from './settings-panel-head';
+import { MediaPickerDialog } from '@/components/media/media-picker-dialog';
 import {
   Dialog,
   DialogContent,
@@ -47,6 +49,7 @@ import type {
   MessageTemplate,
   TemplateButton,
   TemplateSampleValues,
+  MediaAsset,
 } from '@/types';
 import { templateStatusConfig } from '@/lib/template-status';
 import {
@@ -76,6 +79,8 @@ interface TemplateFormData {
   body_samples: string[];
   footer_text: string;
   buttons: TemplateButton[];
+  /** Media Library asset chosen for the header (phase 3). */
+  media_asset_id: string | null;
 }
 
 const emptyForm: TemplateFormData = {
@@ -90,6 +95,7 @@ const emptyForm: TemplateFormData = {
   body_samples: [],
   footer_text: '',
   buttons: [],
+  media_asset_id: null,
 };
 
 const COMMON_LANGUAGE_CODES = [
@@ -153,6 +159,10 @@ export function TemplateManager() {
   const headerFileRef = useRef<HTMLInputElement>(null);
   const headerVideoFileRef = useRef<HTMLInputElement>(null);
   const headerDocumentFileRef = useRef<HTMLInputElement>(null);
+  // Open state for the Media Library picker (phase 3). Selecting an
+  // asset writes both header_media_url and media_asset_id so the
+  // library's "Utilizado en" can trace this template.
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // Body variable indices — `[1, 2, 3]` for "{{1}} {{2}} {{3}}". We
   // re-run the extractor on every render to keep the sample-value rows
@@ -228,6 +238,7 @@ export function TemplateManager() {
         form.header_format !== 'none' && form.header_format !== 'text'
           ? form.header_media_url.trim() || undefined
           : undefined,
+      media_asset_id: form.media_asset_id ?? undefined,
       body_text: form.body_text.trim(),
       footer_text: form.footer_text.trim() || undefined,
       buttons: form.buttons.length > 0 ? form.buttons : undefined,
@@ -250,6 +261,7 @@ export function TemplateManager() {
       body_samples: template.sample_values?.body ?? [],
       footer_text: template.footer_text ?? '',
       buttons: template.buttons ?? [],
+      media_asset_id: template.media_asset_id ?? null,
     });
     setDialogOpen(true);
   }
@@ -475,7 +487,11 @@ export function TemplateManager() {
     setUploadingHeader(true);
     try {
       const { publicUrl } = await uploadAccountMedia('chat-media', file);
-      setForm((f) => ({ ...f, header_media_url: publicUrl }));
+      setForm((f) => ({
+        ...f,
+        header_media_url: publicUrl,
+        media_asset_id: null,
+      }));
       toast.success(t('toastUploadSuccess'));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('toastUploadFailed'));
@@ -529,6 +545,17 @@ export function TemplateManager() {
     } finally {
       setUploadingHeader(false);
     }
+  }
+
+  function handlePickLibraryAsset(asset: MediaAsset) {
+    // Library asset: snapshot its public URL as the Meta sample AND
+    // record the link so the library can show "used by this template".
+    setForm((f) => ({
+      ...f,
+      header_media_url: asset.public_url,
+      media_asset_id: asset.id,
+    }));
+    setPickerOpen(false);
   }
 
   return (
@@ -851,107 +878,114 @@ export function TemplateManager() {
 
               {headerNeedsMedia && (
                 <div className="space-y-2 mt-2">
-                  {form.header_format === 'image' && (
-                    <div className="flex items-center gap-2">
-                      <input
-                        ref={headerFileRef}
-                        type="file"
-                        accept="image/jpeg,image/png"
-                        className="hidden"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) void handleHeaderImageFile(f);
-                          e.target.value = '';
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={uploadingHeader}
-                        onClick={() => headerFileRef.current?.click()}
-                      >
-                        {uploadingHeader ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Upload className="h-3.5 w-3.5" />
-                        )}
-                        {t('uploadImage')}
-                      </Button>
-                      <span className="text-[11px] text-muted-foreground">
-                        {t('uploadHint')}
-                      </span>
-                    </div>
-                  )}
-                  {form.header_format === 'video' && (
-                    <div className="flex items-center gap-2">
-                      <input
-                        ref={headerVideoFileRef}
-                        type="file"
-                        accept="video/mp4,video/3gpp"
-                        className="hidden"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) void handleHeaderVideoFile(f);
-                          e.target.value = '';
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={uploadingHeader}
-                        onClick={() => headerVideoFileRef.current?.click()}
-                      >
-                        {uploadingHeader ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Upload className="h-3.5 w-3.5" />
-                        )}
-                        Upload Video
-                      </Button>
-                      <span className="text-[11px] text-muted-foreground">
-                        MP4 or 3GP, max 16 MB
-                      </span>
-                    </div>
-                  )}
-                  {form.header_format === 'document' && (
-                    <div className="flex items-center gap-2">
-                      <input
-                        ref={headerDocumentFileRef}
-                        type="file"
-                        accept=".pdf,.txt,.doc,.docx"
-                        className="hidden"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) void handleHeaderDocumentFile(f);
-                          e.target.value = '';
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={uploadingHeader}
-                        onClick={() => headerDocumentFileRef.current?.click()}
-                      >
-                        {uploadingHeader ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Upload className="h-3.5 w-3.5" />
-                        )}
-                        Upload Document
-                      </Button>
-                      <span className="text-[11px] text-muted-foreground">
-                        PDF, TXT, DOC, DOCX, max 16 MB
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {form.header_format === 'image' && (
+                      <>
+                        <input
+                          ref={headerFileRef}
+                          type="file"
+                          accept="image/jpeg,image/png"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) void handleHeaderImageFile(f);
+                            e.target.value = '';
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={uploadingHeader}
+                          onClick={() => headerFileRef.current?.click()}
+                        >
+                          {uploadingHeader ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Upload className="h-3.5 w-3.5" />
+                          )}
+                          {t('uploadImage')}
+                        </Button>
+                      </>
+                    )}
+                    {form.header_format === 'video' && (
+                      <>
+                        <input
+                          ref={headerVideoFileRef}
+                          type="file"
+                          accept="video/mp4,video/3gpp"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) void handleHeaderVideoFile(f);
+                            e.target.value = '';
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={uploadingHeader}
+                          onClick={() => headerVideoFileRef.current?.click()}
+                        >
+                          {uploadingHeader ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Upload className="h-3.5 w-3.5" />
+                          )}
+                          Upload Video
+                        </Button>
+                      </>
+                    )}
+                    {form.header_format === 'document' && (
+                      <>
+                        <input
+                          ref={headerDocumentFileRef}
+                          type="file"
+                          accept=".pdf,.txt,.doc,.docx"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) void handleHeaderDocumentFile(f);
+                            e.target.value = '';
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={uploadingHeader}
+                          onClick={() => headerDocumentFileRef.current?.click()}
+                        >
+                          {uploadingHeader ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Upload className="h-3.5 w-3.5" />
+                          )}
+                          Upload Document
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPickerOpen(true)}
+                    >
+                      <Images className="h-3.5 w-3.5" />
+                      {t('chooseFromLibrary')}
+                    </Button>
+                  </div>
                   <Input
                     placeholder={t('mediaUrlPlaceholder', { format: form.header_format })}
                     value={form.header_media_url}
                     onChange={(e) =>
-                      setForm({ ...form, header_media_url: e.target.value })
+                      setForm({
+                        ...form,
+                        header_media_url: e.target.value,
+                        // Hand-editing the URL drops the library link.
+                        media_asset_id: null,
+                      })
                     }
                     className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
                   />
@@ -1254,6 +1288,23 @@ export function TemplateManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Media Library picker (phase 3) — choose a managed header
+          asset instead of uploading to chat-media. Kind follows the
+          active header format (image/video/document). */}
+      <MediaPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        kind={
+          (form.header_format === 'image' ||
+          form.header_format === 'video' ||
+          form.header_format === 'document'
+            ? form.header_format
+            : 'image') as 'image' | 'video' | 'document'
+        }
+        selectedId={form.media_asset_id ?? null}
+        onPick={handlePickLibraryAsset}
+      />
     </section>
   );
 }

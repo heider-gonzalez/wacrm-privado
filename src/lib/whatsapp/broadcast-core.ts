@@ -316,6 +316,8 @@ export async function deliverBroadcast(
         recipient.phone,
         plan.templateName,
         sentMessageId,
+        plan.templateRow?.body_text ?? null,
+        recipient.params,
       );
     } else {
       await db
